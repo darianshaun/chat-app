@@ -1,0 +1,185 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WebSocket Client</title>
+</head>
+<body>
+  <h1>WebSocket Client</h1>
+
+  <div id="response"></div>
+  <div id="users"></div>
+
+  <form id="connect">
+    <input type="text" id="userId" placeholder="Enter User ID" required />
+    <button type="submit">Connect</button>  
+  </form>
+
+  <script>
+    const ws = new WebSocket("ws://localhost:3000");
+
+    ws.onopen = () => {
+      console.log("Connected ✅");
+
+      document.getElementById("connect").onsubmit = (e) => {
+        e.preventDefault();
+        const userId = document.getElementById("userId").value;
+
+        ws.send(JSON.stringify({
+          type: "connect",
+          id: userId
+        }));
+      };
+    };
+
+    // Function to render users
+    function renderUsers(users) {
+      const usersContainer = document.getElementById("users");
+      usersContainer.innerHTML = "<h2>Users:</h2>";
+      users.forEach(user => {
+        const userDiv = document.createElement("div");
+        userDiv.textContent = `ID: ${user.id}, Name: ${user.name}, Age: ${user.age}, Online: ${user.isOnline}`;
+        userDiv.style.color = user.isOnline ? "green" : "red"; // highlight online/offline
+        usersContainer.appendChild(userDiv);
+      });
+    }
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+
+        // Handle full user list
+        if (data.type === "userData" && Array.isArray(data.payload)) {
+          renderUsers(data.payload);
+        }
+
+        // Handle updates (broadcast)
+        if (data.type === "updateUsers" && Array.isArray(data.payload)) {
+          renderUsers(data.payload);
+        }
+
+      } catch (err) {
+        // If it's not JSON, just print message
+        const responseContainer = document.getElementById("response");
+        const message = document.createElement("p");
+        message.textContent = "Message from server: " + event.data;
+        responseContainer.appendChild(message);
+      }
+    };
+
+    ws.onclose = () => {
+      console.log("Disconnected ❌");
+    };
+  </script>
+</body>
+</html> -->
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WebSocket Chat</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #users div { margin: 5px 0; }
+    #chat { margin-top: 20px; border: 1px solid #ccc; padding: 10px; height: 200px; overflow-y: auto; }
+    #chat p { margin: 5px 0; }
+    .online { color: green; }
+    .offline { color: red; }
+  </style>
+</head>
+<body>
+  <h1>WebSocket Chat</h1>
+
+  <!-- Connection form -->
+  <form id="connect">
+    <input type="text" id="userId" placeholder="Enter User ID (e.g., user_101)" required />
+    <button type="submit">Connect</button>
+  </form>
+
+  <!-- Online users list -->
+  <div id="users"></div>
+
+  <!-- Chat messages -->
+  <div id="chat"></div>
+
+  <!-- Message form -->
+  <form id="messageForm" style="display:none; margin-top:10px;">
+    <input type="text" id="messageInput" placeholder="Type a message..." required />
+    <button type="submit">Send</button>
+  </form>
+
+  <script>
+    const ws = new WebSocket("ws://localhost:3000");
+    let myId = null;
+
+    ws.onopen = () => {
+      console.log("Connected ✅");
+
+      // Handle connection form submit
+      document.getElementById("connect").onsubmit = (e) => {
+        e.preventDefault();
+        const userId = document.getElementById("userId").value;
+        myId = userId;
+        ws.send(JSON.stringify({ type: "connect", id: userId }));
+
+        // Show chat form after connect
+        document.getElementById("messageForm").style.display = "block";
+      };
+
+      // Handle sending chat message
+      document.getElementById("messageForm").onsubmit = (e) => {
+        e.preventDefault();
+        const message = document.getElementById("messageInput").value;
+        ws.send(JSON.stringify({ type: "chat", from: myId, text: message }));
+        document.getElementById("messageInput").value = "";
+      };
+    };
+
+    // Render users
+    function renderUsers(users) {
+      const usersContainer = document.getElementById("users");
+      usersContainer.innerHTML = "<h2>Users:</h2>";
+      users.forEach(user => {
+        const userDiv = document.createElement("div");
+        userDiv.textContent = `${user.name} (${user.id}) - ${user.isOnline ? "Online" : "Offline"}`;
+        userDiv.className = user.isOnline ? "online" : "offline";
+        usersContainer.appendChild(userDiv);
+      });
+    }
+
+    // Append chat message
+    function addMessage(text, from) {
+      const chat = document.getElementById("chat");
+      const msg = document.createElement("p");
+      msg.innerHTML = `<strong>${from}:</strong> ${text}`;
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight; // auto scroll
+    }
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+
+        if (data.type === "userData" && Array.isArray(data.payload)) {
+          renderUsers(data.payload);
+        }
+
+        if (data.type === "chat") {
+          addMessage(data.text, data.from);
+        }
+      } catch (err) {
+        console.log("Server:", event.data);
+      }
+    };
+
+    ws.onclose = () => {
+      console.log("Disconnected ❌");
+    };
+  </script>
+</body>
+</html>
