@@ -99,7 +99,7 @@ connectBtn.addEventListener("click", () => {
   }
 
   // Use deployed server URL on Render (replace localhost for production!)
-  socket = new WebSocket("ws://localhost:3000");
+  socket = new WebSocket("https://chat-app-cves.onrender.com");
 
   socket.onopen = () => {
     console.log("✅ Connected to WebSocket server");
