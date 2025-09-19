@@ -3,18 +3,21 @@ const express = require("express");
 const http = require("http");
 const WebSocket = require("ws");
 const cors = require("cors");
-
-const app = express();
-
 const path = require("path");
 
-// Serve static frontend files from /public
-app.use(express.static(path.join(__dirname, "public")));
-
+const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve static frontend files from /public
+app.use(express.static(path.join(__dirname, "public")));
+
+// Root route → always return index.html
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 // Health check
 app.get("/api/health", (req, res) => {
@@ -45,14 +48,18 @@ const broadcast = (data) => {
 
 wss.on("connection", (ws) => {
   console.log("✅ New client connected");
-  ws.send(JSON.stringify({ type: "info", message: "Welcome! Please send your id." }));
+  ws.send(
+    JSON.stringify({ type: "info", message: "Welcome! Please send your id." })
+  );
 
   ws.on("message", (message) => {
     let data;
     try {
       data = JSON.parse(message.toString());
     } catch (err) {
-      ws.send(JSON.stringify({ type: "error", message: "Invalid JSON format ❌" }));
+      ws.send(
+        JSON.stringify({ type: "error", message: "Invalid JSON format ❌" })
+      );
       return;
     }
 
@@ -70,7 +77,12 @@ wss.on("connection", (ws) => {
             // Broadcast updated users
             broadcast({ type: "userData", payload: users });
           } else {
-            ws.send(JSON.stringify({ type: "error", message: "❌ No matching user found" }));
+            ws.send(
+              JSON.stringify({
+                type: "error",
+                message: "❌ No matching user found",
+              })
+            );
           }
         }
         break;
@@ -90,13 +102,19 @@ wss.on("connection", (ws) => {
 
       case "check":
         if (data.id) {
-          const isOnline = users.some((u) => u.id === data.id && u.isOnline);
-          ws.send(JSON.stringify({ type: "status", id: data.id, isOnline }));
+          const isOnline = users.some(
+            (u) => u.id === data.id && u.isOnline
+          );
+          ws.send(
+            JSON.stringify({ type: "status", id: data.id, isOnline })
+          );
         }
         break;
 
       default:
-        ws.send(JSON.stringify({ type: "error", message: "Unknown type" }));
+        ws.send(
+          JSON.stringify({ type: "error", message: "Unknown type" })
+        );
     }
   });
 
